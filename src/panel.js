@@ -4,7 +4,7 @@
  * clicking a tile brings that panel back.
  */
 
-import { closeButton, el, fill, icon, leave, look, region } from './shared.js';
+import { closeButton, el, fill, fillTitle, icon, leave, look, region } from './shared.js';
 
 const state = { current: null, parked: [] };
 
@@ -12,12 +12,11 @@ const panelsRegion = () => region('hd-panels', (root) => root.append(el('div', '
 
 const render = (entry) => {
     const node = el('div', 'hd-panel');
-    node.setAttribute('role', 'status');
     node.style.setProperty('--hd-accent', entry.color);
 
     node.append(
         closeButton('Close', () => closeEntry(entry), 'hd-panel__close'),
-        el('div', 'hd-panel__title', entry.options.title ?? ''),
+        fillTitle(el('div', 'hd-panel__title'), entry.options),
     );
 
     if (entry.options.content != null || entry.options.html != null) {
@@ -81,6 +80,11 @@ const closeEntry = (entry) => {
     entry.closed = true;
     clearTimeout(entry.timer);
 
+    // A handle that outlived reset(): nothing left to close.
+    if (state.current !== entry && !state.parked.includes(entry)) {
+        return;
+    }
+
     if (state.current !== entry) {
         state.parked = state.parked.filter((other) => other !== entry);
         renderTiles();
@@ -103,6 +107,7 @@ const closeEntry = (entry) => {
 /**
  * @param {object} options
  * @param {string} options.title
+ * @param {string} [options.titleHtml]  Trusted HTML instead of title
  * @param {string} [options.content]   Plain text
  * @param {string} [options.html]      Trusted HTML instead of content
  * @param {'success'|'error'|'warning'|'info'} [options.type]

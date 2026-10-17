@@ -15,7 +15,7 @@ describe('toast', () => {
         expect(text(toast, '.hd-toast__content')).toBe('Your changes are live.');
         expect(toast.style.getPropertyValue('--hd-accent')).toBe('#296191');
         expect(toast.querySelector('.hd-toast__icon svg')).not.toBeNull();
-        expect(toast.getAttribute('role')).toBe('status');
+        expect(toast.closest('.hd-toasts').getAttribute('aria-live')).toBe('polite');
     });
 
     it('stacks the newest toast on top', () => {

@@ -160,6 +160,7 @@
     position: fixed;
     inset: 0;
     z-index: var(--hd-z-alert, 100000);
+    overflow-y: auto;
     overscroll-behavior: contain;
 }
 
@@ -283,6 +284,15 @@
 
 [data-herald-theme="default"] .hd-toast__close:focus-visible {
     opacity: 1;
+}
+
+/* A toast that does not close on click must show a way to close it. */
+[data-herald-theme="default"] .hd-toast--sticky .hd-toast__close {
+    opacity: 0.7;
+}
+
+[data-herald-theme="default"] .hd-toast--sticky {
+    cursor: default;
 }
 
 [data-herald-theme="default"] .hd-toast__progress {
@@ -787,8 +797,7 @@
 
 /* Alert: a centred sheet over a scrim instead of SmartAdmin's band. */
 [data-herald-theme="polished"].hd-alert-backdrop {
-    display: grid;
-    place-items: center;
+    display: flex;
     padding: 16px max(16px, env(safe-area-inset-right, 0px)) 16px max(16px, env(safe-area-inset-left, 0px));
     background: var(--hd-scrim);
     animation: hd-fade-in var(--hd-duration-normal) var(--hd-ease-smooth);
@@ -796,6 +805,7 @@
 
 [data-herald-theme="polished"] .hd-alert {
     width: min(440px, 100%);
+    margin: auto;
     padding: 24px;
     border-radius: var(--hd-radius-sheet);
     background: var(--hd-surface);

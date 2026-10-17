@@ -30,7 +30,14 @@ var unregisterRoot = (root) => {
   roots.delete(root);
   root.remove();
 };
+var cleanups = /* @__PURE__ */ new Set();
+var onReset = (cleanup) => {
+  cleanups.add(cleanup);
+  return () => cleanups.delete(cleanup);
+};
 var resetShared = () => {
+  [...cleanups].forEach((cleanup) => cleanup());
+  cleanups.clear();
   roots.forEach((root) => root.remove());
   roots.clear();
   settings = { ...DEFAULTS };
@@ -49,12 +56,16 @@ var fill = (node, { content, html }) => {
   }
   return node;
 };
+var fillTitle = (node, { title, titleHtml }) => fill(node, { content: title ?? "", html: titleHtml });
 var region = (className, build) => {
-  const existing = [...roots].find((root2) => root2.classList.contains(className) && root2.isConnected);
+  roots.forEach((root2) => !root2.isConnected && root2.classList.contains(className) && roots.delete(root2));
+  const existing = [...roots].find((root2) => root2.classList.contains(className));
   if (existing) {
     return existing;
   }
   const root = registerRoot(el("div", className));
+  root.setAttribute("role", "status");
+  root.setAttribute("aria-live", "polite");
   build?.(root);
   document.body.append(root);
   return root;
@@ -70,7 +81,7 @@ var leave = (node, done) => {
     done?.();
   };
   node.classList.add("hd-leaving");
-  node.addEventListener("animationend", finish, { once: true });
+  node.addEventListener("animationend", (event) => event.target === node && finish());
   setTimeout(finish, 300);
 };
 var svg = (paths) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${paths}</svg>`;
@@ -129,21 +140,25 @@ var closeButton = (label, onClick, className) => {
 var toast = (options = {}) => {
   const { color, icon: iconName } = look(options);
   const node = el("div", "hd-toast");
-  node.setAttribute("role", "status");
   node.style.setProperty("--hd-accent", color);
   if (options.type) {
     node.dataset.type = options.type;
   }
   let closed = false;
   let timer = null;
-  let remaining = options.timeout ?? null;
+  let remaining = options.timeout > 0 ? options.timeout : null;
   let startedAt = 0;
+  const forget = onReset(() => {
+    closed = true;
+    clearTimeout(timer);
+  });
   const close = () => {
     if (closed) {
       return;
     }
     closed = true;
     clearTimeout(timer);
+    forget();
     leave(node, () => options.onClose?.());
   };
   const iconNode = icon(iconName, "hd-toast__icon");
@@ -153,7 +168,7 @@ var toast = (options = {}) => {
     node.classList.add("hd-toast--plain");
   }
   const body = el("div", "hd-toast__body");
-  body.append(el("div", "hd-toast__title", options.title ?? ""));
+  body.append(fillTitle(el("div", "hd-toast__title"), options));
   if (options.content != null || options.html != null) {
     body.append(fill(el("div", "hd-toast__content"), options));
   }
@@ -178,26 +193,40 @@ var toast = (options = {}) => {
   }
   if (options.closeOnClick !== false) {
     node.addEventListener("click", close);
+  } else {
+    node.classList.add("hd-toast--sticky");
   }
   if (remaining !== null) {
     const bar = el("div", "hd-toast__progress");
     node.style.setProperty("--hd-timeout", `${remaining}ms`);
     node.append(bar);
     const start = () => {
+      clearTimeout(timer);
       startedAt = Date.now();
       timer = setTimeout(close, remaining);
     };
-    node.addEventListener("mouseenter", () => {
-      clearTimeout(timer);
-      remaining -= Date.now() - startedAt;
-      node.dataset.paused = "true";
-    });
-    node.addEventListener("mouseleave", () => {
+    const holds = /* @__PURE__ */ new Set();
+    const hold = (reason) => {
+      if (holds.size === 0) {
+        clearTimeout(timer);
+        remaining -= Date.now() - startedAt;
+        node.dataset.paused = "true";
+      }
+      holds.add(reason);
+    };
+    const release = (reason) => {
+      if (!holds.delete(reason) || holds.size > 0) {
+        return;
+      }
       delete node.dataset.paused;
       if (!closed) {
         start();
       }
-    });
+    };
+    node.addEventListener("mouseenter", () => hold("hover"));
+    node.addEventListener("mouseleave", () => release("hover"));
+    node.addEventListener("focusin", () => hold("focus"));
+    node.addEventListener("focusout", (event) => !node.contains(event.relatedTarget) && release("focus"));
     start();
   }
   region("hd-toasts").prepend(node);
@@ -209,11 +238,10 @@ var state = { current: null, parked: [] };
 var panelsRegion = () => region("hd-panels", (root) => root.append(el("div", "hd-tiles")));
 var render = (entry) => {
   const node = el("div", "hd-panel");
-  node.setAttribute("role", "status");
   node.style.setProperty("--hd-accent", entry.color);
   node.append(
     closeButton("Close", () => closeEntry(entry), "hd-panel__close"),
-    el("div", "hd-panel__title", entry.options.title ?? "")
+    fillTitle(el("div", "hd-panel__title"), entry.options)
   );
   if (entry.options.content != null || entry.options.html != null) {
     node.append(fill(el("div", "hd-panel__content"), entry.options));
@@ -266,6 +294,9 @@ var closeEntry = (entry) => {
   }
   entry.closed = true;
   clearTimeout(entry.timer);
+  if (state.current !== entry && !state.parked.includes(entry)) {
+    return;
+  }
   if (state.current !== entry) {
     state.parked = state.parked.filter((other) => other !== entry);
     renderTiles();
@@ -295,14 +326,13 @@ var resetPanels = () => {
 
 // src/alert.js
 var count = 0;
+var stack = [];
 var list = (value, fallback) => {
-  if (Array.isArray(value)) {
-    return value.map(String);
-  }
-  const parsed = [...String(value ?? "").matchAll(/\[([^\]]*)\]/g)].map((match) => match[1]);
-  return parsed.length ? parsed : fallback;
+  const parsed = Array.isArray(value) ? value.map(String) : [...String(value ?? "").matchAll(/\[([^\]]*)\]/g)].map((match) => match[1]);
+  const labels = parsed.map((label) => label.trim()).filter((label) => label !== "");
+  return labels.length ? labels : fallback;
 };
-var FOCUSABLE = 'button, input, select, textarea, [tabindex]:not([tabindex="-1"])';
+var FOCUSABLE = 'a[href], button, input, select, textarea, [contenteditable="true"], [tabindex]:not([tabindex="-1"])';
 var alert = (options = {}, callback) => new Promise((resolve) => {
   const id = `hd-alert-${++count}`;
   const labels = list(options.buttons, ["OK"]);
@@ -313,7 +343,7 @@ var alert = (options = {}, callback) => new Promise((resolve) => {
   box.setAttribute("aria-modal", "true");
   box.setAttribute("aria-labelledby", `${id}-title`);
   const inner = el("div", "hd-alert__inner");
-  const title = el("div", "hd-alert__title", options.title ?? "");
+  const title = fillTitle(el("div", "hd-alert__title"), options);
   title.id = `${id}-title`;
   inner.append(title);
   if (options.content != null || options.html != null) {
@@ -337,19 +367,30 @@ var alert = (options = {}, callback) => new Promise((resolve) => {
     field.setAttribute("aria-labelledby", `${id}-title`);
     inner.append(field);
   }
+  const self = {};
   let done = false;
-  const finish = (button) => {
+  const finish = (button, { silent = false } = {}) => {
     if (done) {
       return;
     }
     done = true;
     document.removeEventListener("keydown", onKeydown, true);
+    stack.splice(stack.indexOf(self), 1);
+    forget();
     const value = field ? field.value : null;
     unregisterRoot(backdrop);
     previousFocus?.focus?.();
-    callback?.(button, value);
     resolve({ button, value });
+    if (silent || !callback) {
+      return;
+    }
+    try {
+      callback(button, value);
+    } catch (error) {
+      console.error(error);
+    }
   };
+  const forget = onReset(() => finish(null, { silent: true }));
   const row = el("div", "hd-alert__buttons");
   labels.forEach((label, index) => {
     const main = index === labels.length - 1;
@@ -359,27 +400,38 @@ var alert = (options = {}, callback) => new Promise((resolve) => {
     row.append(button);
   });
   inner.append(row);
+  const trapTab = (event) => {
+    const focusable = [...box.querySelectorAll(FOCUSABLE)];
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const active = document.activeElement;
+    if (!box.contains(active)) {
+      event.preventDefault();
+      (event.shiftKey ? last : first).focus();
+    } else if (event.shiftKey && active === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && active === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
   const onKeydown = (event) => {
-    if (event.key === "Escape") {
+    if (stack[stack.length - 1] !== self) {
+      return;
+    }
+    if (event.key === "Escape" && options.dismissible !== false) {
       event.preventDefault();
       finish(null);
     } else if (event.key === "Enter" && event.target === field && field.tagName === "INPUT") {
       event.preventDefault();
       finish(labels[labels.length - 1]);
     } else if (event.key === "Tab") {
-      const focusable = [...box.querySelectorAll(FOCUSABLE)];
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
+      trapTab(event);
     }
   };
   document.addEventListener("keydown", onKeydown, true);
+  stack.push(self);
   box.append(inner);
   backdrop.append(box);
   document.body.append(backdrop);

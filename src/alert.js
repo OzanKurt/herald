@@ -4,26 +4,29 @@
  * centred card.
  */
 
-import { el, fill, registerRoot, unregisterRoot } from './shared.js';
+import { el, fill, fillTitle, onReset, registerRoot, unregisterRoot } from './shared.js';
 
 let count = 0;
 
-/** "[No][Yes]" or ['No', 'Yes'] -> ['No', 'Yes'] */
+// Open alerts, newest last. Only the top one answers the keyboard.
+const stack = [];
+
+/** "[No][Yes]" or ['No', 'Yes'] -> ['No', 'Yes'], trimmed; the fallback when nothing is left. */
 const list = (value, fallback) => {
-    if (Array.isArray(value)) {
-        return value.map(String);
-    }
+    const parsed = Array.isArray(value)
+        ? value.map(String)
+        : [...String(value ?? '').matchAll(/\[([^\]]*)\]/g)].map((match) => match[1]);
+    const labels = parsed.map((label) => label.trim()).filter((label) => label !== '');
 
-    const parsed = [...String(value ?? '').matchAll(/\[([^\]]*)\]/g)].map((match) => match[1]);
-
-    return parsed.length ? parsed : fallback;
+    return labels.length ? labels : fallback;
 };
 
-const FOCUSABLE = 'button, input, select, textarea, [tabindex]:not([tabindex="-1"])';
+const FOCUSABLE = 'a[href], button, input, select, textarea, [contenteditable="true"], [tabindex]:not([tabindex="-1"])';
 
 /**
  * @param {object} options
  * @param {string} options.title
+ * @param {string} [options.titleHtml]    Trusted HTML instead of title
  * @param {string} [options.content]      Plain text
  * @param {string} [options.html]         Trusted HTML instead of content
  * @param {string|string[]} [options.buttons='[OK]']  The last one is the main action
@@ -31,8 +34,9 @@ const FOCUSABLE = 'button, input, select, textarea, [tabindex]:not([tabindex="-1
  * @param {string} [options.inputValue]
  * @param {string} [options.placeholder]
  * @param {string|string[]} [options.options]  Choices for input: 'select'
+ * @param {boolean} [options.dismissible=true]  Escape closes the alert with button null
  * @param {(button: string|null, value: string|null) => void} [callback]  Legacy style
- * @returns {Promise<{ button: string|null, value: string|null }>}  button is null when dismissed with Escape
+ * @returns {Promise<{ button: string|null, value: string|null }>}  button is null when dismissed
  */
 export const alert = (options = {}, callback) => new Promise((resolve) => {
     const id = `hd-alert-${++count}`;
@@ -46,7 +50,7 @@ export const alert = (options = {}, callback) => new Promise((resolve) => {
     box.setAttribute('aria-labelledby', `${id}-title`);
 
     const inner = el('div', 'hd-alert__inner');
-    const title = el('div', 'hd-alert__title', options.title ?? '');
+    const title = fillTitle(el('div', 'hd-alert__title'), options);
     title.id = `${id}-title`;
     inner.append(title);
 
@@ -73,20 +77,36 @@ export const alert = (options = {}, callback) => new Promise((resolve) => {
         inner.append(field);
     }
 
+    const self = {};
     let done = false;
-    const finish = (button) => {
+    const finish = (button, { silent = false } = {}) => {
         if (done) {
             return;
         }
         done = true;
         document.removeEventListener('keydown', onKeydown, true);
+        stack.splice(stack.indexOf(self), 1);
+        forget();
 
         const value = field ? field.value : null;
         unregisterRoot(backdrop);
         previousFocus?.focus?.();
-        callback?.(button, value);
         resolve({ button, value });
+
+        if (silent || !callback) {
+            return;
+        }
+
+        // The promise is already settled, so a throwing callback cannot leave it pending.
+        try {
+            callback(button, value);
+        } catch (error) {
+            console.error(error);
+        }
     };
+
+    // reset() closes the alert without calling its callback.
+    const forget = onReset(() => finish(null, { silent: true }));
 
     const row = el('div', 'hd-alert__buttons');
     labels.forEach((label, index) => {
@@ -98,28 +118,41 @@ export const alert = (options = {}, callback) => new Promise((resolve) => {
     });
     inner.append(row);
 
+    const trapTab = (event) => {
+        const focusable = [...box.querySelectorAll(FOCUSABLE)];
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        const active = document.activeElement;
+
+        if (!box.contains(active)) {
+            event.preventDefault();
+            (event.shiftKey ? last : first).focus();
+        } else if (event.shiftKey && active === first) {
+            event.preventDefault();
+            last.focus();
+        } else if (!event.shiftKey && active === last) {
+            event.preventDefault();
+            first.focus();
+        }
+    };
+
     const onKeydown = (event) => {
-        if (event.key === 'Escape') {
+        if (stack[stack.length - 1] !== self) {
+            return;
+        }
+
+        if (event.key === 'Escape' && options.dismissible !== false) {
             event.preventDefault();
             finish(null);
         } else if (event.key === 'Enter' && event.target === field && field.tagName === 'INPUT') {
             event.preventDefault();
             finish(labels[labels.length - 1]);
         } else if (event.key === 'Tab') {
-            const focusable = [...box.querySelectorAll(FOCUSABLE)];
-            const first = focusable[0];
-            const last = focusable[focusable.length - 1];
-
-            if (event.shiftKey && document.activeElement === first) {
-                event.preventDefault();
-                last.focus();
-            } else if (!event.shiftKey && document.activeElement === last) {
-                event.preventDefault();
-                first.focus();
-            }
+            trapTab(event);
         }
     };
     document.addEventListener('keydown', onKeydown, true);
+    stack.push(self);
 
     box.append(inner);
     backdrop.append(box);

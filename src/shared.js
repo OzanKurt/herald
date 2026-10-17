@@ -48,7 +48,19 @@ export const unregisterRoot = (root) => {
     root.remove();
 };
 
+// Teardown hooks for things still open (toast timers, alert listeners), run by reset().
+const cleanups = new Set();
+
+/** Register a teardown for reset(); returns a function that unregisters it. */
+export const onReset = (cleanup) => {
+    cleanups.add(cleanup);
+
+    return () => cleanups.delete(cleanup);
+};
+
 export const resetShared = () => {
+    [...cleanups].forEach((cleanup) => cleanup());
+    cleanups.clear();
     roots.forEach((root) => root.remove());
     roots.clear();
     settings = { ...DEFAULTS };
@@ -77,14 +89,25 @@ export const fill = (node, { content, html }) => {
     return node;
 };
 
-/** A fixed region element in <body>, created on first use. */
+/** The title line: plain text, or trusted HTML from `titleHtml` (the jQuery drop-in uses it for legacy titles). */
+export const fillTitle = (node, { title, titleHtml }) => fill(node, { content: title ?? '', html: titleHtml });
+
+/**
+ * A fixed region element in <body>, created on first use. Regions are polite
+ * live regions that exist before their first message, so screen readers
+ * announce what is added to them.
+ */
 export const region = (className, build) => {
-    const existing = [...roots].find((root) => root.classList.contains(className) && root.isConnected);
+    roots.forEach((root) => !root.isConnected && root.classList.contains(className) && roots.delete(root));
+
+    const existing = [...roots].find((root) => root.classList.contains(className));
     if (existing) {
         return existing;
     }
 
     const root = registerRoot(el('div', className));
+    root.setAttribute('role', 'status');
+    root.setAttribute('aria-live', 'polite');
     build?.(root);
     document.body.append(root);
 
@@ -104,7 +127,8 @@ export const leave = (node, done) => {
     };
 
     node.classList.add('hd-leaving');
-    node.addEventListener('animationend', finish, { once: true });
+    // animationend bubbles: ignore the countdown bar's or an animated icon's.
+    node.addEventListener('animationend', (event) => event.target === node && finish());
     setTimeout(finish, 300);
 };
 

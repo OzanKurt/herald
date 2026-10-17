@@ -51,3 +51,37 @@ describe('jQuery drop-in', () => {
         expect(typeof window.Herald.toast).toBe('function');
     });
 });
+
+describe('jQuery drop-in, legacy behaviour', () => {
+    beforeEach(async () => {
+        reset();
+        window.jQuery = function jQuery() {};
+        window.$ = window.jQuery;
+        vi.resetModules();
+        await import('../src/jquery.js');
+    });
+
+    afterEach(() => {
+        delete window.jQuery;
+        delete window.$;
+        vi.useRealTimers();
+    });
+
+    it('ignores Escape like SmartAdmin did, so callbacks only ever see button labels', () => {
+        const callback = vi.fn();
+        window.$.SmartMessageBox({ title: 'Delete?', buttons: '[No][Yes]' }, callback);
+
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+        expect(alertBox()).not.toBeNull();
+        expect(callback).not.toHaveBeenCalled();
+    });
+
+    it('renders legacy titles as HTML', () => {
+        window.$.SmartMessageBox({ title: "<i class='fa fa-sign-out'></i> Logout <span>Ozan</span>?" });
+        window.$.bigBox({ title: '<b>Big</b>' });
+
+        expect(alertBox().querySelector('.hd-alert__title i').className).toBe('fa fa-sign-out');
+        expect(panel().querySelector('.hd-panel__title b').textContent).toBe('Big');
+    });
+});

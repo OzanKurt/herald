@@ -38,7 +38,7 @@ The default theme uses Open Sans when the page loads it, like SmartAdmin did, an
 
 ## Toasts
 
-Small boxes stack in the top-right corner, newest on top. Without a `timeout` they stay until clicked. Hovering a toast pauses its countdown.
+Small boxes stack in the top-right corner, newest on top. Without a `timeout` they stay until clicked. Hovering a toast, or moving keyboard focus into it, pauses its countdown. Toasts and panels are announced to screen readers through a polite live region.
 
 ```js
 const handle = Herald.toast({
@@ -58,15 +58,16 @@ handle.close();
 | Option | Description |
 |---|---|
 | `title` | Bold first line |
+| `titleHtml` | Trusted HTML instead of `title` |
 | `content` | Text under the title |
 | `html` | Trusted HTML instead of `content`. Never pass user input here. |
 | `type` | `success`, `error`, `warning` or `info`: sets the colour and icon |
 | `color` | Any CSS colour; wins over `type` |
 | `icon` | Large icon on the left: a built-in name (`bell`, `warning`, `shield`, `check`, `cross`, `info`, `thumbs`, `cloud`, `clock`) or icon font classes such as `fa fa-bell` |
 | `iconSmall` | Small icon in the bottom-right corner, same values as `icon` |
-| `timeout` | Milliseconds before it closes; omit to keep it open |
+| `timeout` | Milliseconds before it closes; omit it (or pass `0`) to keep the toast open |
 | `actions` | Buttons: `{ label, variant?: 'danger', onClick? }`. Clicking one also closes the toast. |
-| `closeOnClick` | `false` keeps the toast open when its body is clicked (default `true`) |
+| `closeOnClick` | `false` keeps the toast open when its body is clicked (default `true`); its close button is then always shown |
 | `onClose` | Called once, after the toast has gone |
 
 ## Panels
@@ -83,7 +84,7 @@ Herald.panel({
 });
 ```
 
-Same options as toasts (`title`, `content`, `html`, `type`, `color`, `icon`, `timeout`, `onClose`), plus `number`, shown in the corner and on the parked tile. A `timeout` only runs while the panel is visible and starts again when it is brought back. `Herald.panel()` returns `{ close() }`, which also removes a parked panel.
+Same options as toasts (`title`, `titleHtml`, `content`, `html`, `type`, `color`, `icon`, `timeout`, `onClose`), plus `number`, shown in the corner and on the parked tile. A `timeout` only runs while the panel is visible and starts again when it is brought back. `Herald.panel()` returns `{ close() }`, which also removes a parked panel.
 
 ## Alerts
 
@@ -107,15 +108,18 @@ if (button === 'Save') rename(value);
 
 | Option | Description |
 |---|---|
-| `title`, `content`, `html` | As for toasts |
+| `title`, `titleHtml`, `content`, `html` | As for toasts |
 | `buttons` | An array, or SmartAdmin's `'[No][Yes]'` string. The last button is the main action. Default `['OK']`. |
 | `input` | `text`, `password` or `select` |
 | `inputValue`, `placeholder` | For text inputs |
 | `options` | Choices for `select`, as an array or `'[Red][Green]'` |
+| `dismissible` | `false` makes Escape do nothing (default `true`) |
 
-It returns a promise of `{ button, value }`. `value` is the input's value, or `null` without an input. Escape dismisses the alert with `button: null`. Enter in a text input presses the main button. Focus moves into the alert, Tab stays inside it, and focus returns to where it was when the alert closes. A second argument, `(button, value) => {}`, is called too, the way SmartAdmin's callback was.
+It returns a promise of `{ button, value }`. `value` is the input's value, or `null` without an input. Escape dismisses the alert with `button: null`. Enter in a text input presses the main button. Focus moves into the alert, Tab stays inside it, and focus returns to where it was when the alert closes. With several alerts open, only the newest one answers the keyboard. An alert taller than the screen scrolls. A second argument, `(button, value) => {}`, is called too, the way SmartAdmin's callback was; the promise settles first, so a callback that throws cannot leave it pending.
 
-![A polished alert with a text field holding "Operations overview" and Cancel and Save buttons.](docs/images/polished-light-prompt.png)
+| Polished, with an input | Polished, dark |
+|---|---|
+| ![A polished alert with a text field holding "Operations overview" and Cancel and Save buttons.](docs/images/polished-light-prompt.png) | ![The delete confirmation as a dark card over a dimmed dark dashboard.](docs/images/polished-dark-alert.png) |
 
 ## Themes and colour schemes
 
@@ -137,7 +141,9 @@ Changing either restyles notifications that are already on screen. Every element
 }
 ```
 
-Both themes respect `prefers-reduced-motion`: movement and blur are removed, short fades stay.
+Both themes respect `prefers-reduced-motion`: the polished theme drops movement and blur and keeps short fades; the default theme turns its animations off.
+
+The polished theme uses `oklch()` and `color-mix()`, so it needs Chrome or Edge 111, Safari 16.2 or Firefox 113 and later. The default theme has no such requirement.
 
 ## Moving from SmartAdmin
 
@@ -158,10 +164,11 @@ $.SmartMessageBox({ title: 'Smart Alert!', content: 'Sure?', buttons: '[No][Yes]
 
 Differences to know about:
 
-- `content` is treated as HTML in these three functions, as it was in SmartAdmin. Do not put user input in it.
+- `title` and `content` are treated as HTML in these three functions, as they were in SmartAdmin. Do not put user input in them.
+- `$.SmartMessageBox` ignores Escape, as SmartAdmin did, so its callback only ever receives one of your button labels.
 - Font Awesome classes in `icon` and `iconSmall` still render, as long as the page loads Font Awesome. Built-in icon names work without it.
 - `sound` is accepted and ignored; Herald plays no sounds.
-- The jQuery build also defines `window.Herald`, so new code can use the regular API next to the legacy calls.
+- The jQuery build also defines `window.Herald`, so new code can use the regular API next to the legacy calls. Load it after jQuery; loaded before, it warns in the console and defines only `window.Herald`.
 
 ## Development
 
