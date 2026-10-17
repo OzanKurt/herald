@@ -1,0 +1,73 @@
+{
+    "name": "@ozankurt/herald",
+    "version": "1.0.0",
+    "description": "Toasts, big notification panels and full-width alerts in the classic SmartAdmin style, with a modern polished theme. No dependencies; optional jQuery drop-in for $.smallBox, $.bigBox and $.SmartMessageBox.",
+    "keywords": [
+        "notifications",
+        "toast",
+        "alert",
+        "dialog",
+        "smartadmin",
+        "smallbox",
+        "bigbox",
+        "jquery"
+    ],
+    "license": "MIT",
+    "author": {
+        "name": "Ozan Kurt",
+        "email": "me@ozankurt.com",
+        "url": "https://ozankurt.com"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/OzanKurt/herald.git"
+    },
+    "homepage": "https://github.com/OzanKurt/herald#readme",
+    "bugs": "https://github.com/OzanKurt/herald/issues",
+    "type": "module",
+    "main": "dist/herald.cjs",
+    "module": "dist/esm/herald.mjs",
+    "unpkg": "dist/herald.min.js",
+    "jsdelivr": "dist/herald.min.js",
+    "exports": {
+        ".": {
+            "import": "./dist/esm/herald.mjs",
+            "require": "./dist/herald.cjs",
+            "default": "./dist/esm/herald.mjs"
+        },
+        "./style.css": "./dist/herald.css",
+        "./dist/*": "./dist/*",
+        "./package.json": "./package.json"
+    },
+    "files": [
+        "dist",
+        "CHANGELOG.md"
+    ],
+    "sideEffects": [
+        "*.css",
+        "./dist/herald.js",
+        "./dist/herald.min.js",
+        "./dist/herald.jquery.js",
+        "./dist/herald.jquery.min.js"
+    ],
+    "engines": {
+        "node": ">=20"
+    },
+    "scripts": {
+        "build": "node ./scripts/build.js",
+        "test": "vitest run",
+        "examples": "vite --config vite.examples.config.js",
+        "screenshots": "node scripts/screenshots.js",
+        "prepublishOnly": "npm test && npm run build"
+    },
+    "publishConfig": {
+        "access": "public"
+    },
+    "devDependencies": {
+        "@playwright/test": "1.63.0",
+        "esbuild": "^0.28.2",
+        "happy-dom": "^21.0.3",
+        "vite": "^8.3.4",
+        "vitest": "^5.0.5"
+    }
+}

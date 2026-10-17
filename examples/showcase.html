@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Herald showcase</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap">
+    <style>
+        /*
+         * A plain admin screen for the notifications to sit on. Nothing here
+         * styles Herald; the page only reads ?theme, ?scheme and ?scene.
+         */
+        :root {
+            color-scheme: light;
+            --bg: #eef1f5;
+            --surface: #ffffff;
+            --text: #1d2530;
+            --muted: #697586;
+            --line: #e1e6ec;
+            --nav: #2c3742;
+            --nav-text: #c5cdd6;
+            --bar: #c9d2dc;
+        }
+
+        :root[data-scheme="dark"] {
+            color-scheme: dark;
+            --bg: #12161b;
+            --surface: #1a2027;
+            --text: #e4e8ed;
+            --muted: #8f9aa8;
+            --line: #26303a;
+            --nav: #0d1115;
+            --nav-text: #8f9aa8;
+            --bar: #2b3540;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            background: var(--bg);
+            color: var(--text);
+            font: 400 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+        }
+
+        nav {
+            padding: 20px 16px;
+            background: var(--nav);
+            color: var(--nav-text);
+            display: grid;
+            align-content: start;
+            gap: 4px;
+        }
+
+        nav strong { color: #fff; font-size: 15px; margin-bottom: 16px; }
+        nav span { padding: 8px 10px; border-radius: 6px; }
+        nav span.on { background: rgb(255 255 255 / 0.08); color: #fff; }
+
+        main { padding: 28px 32px; display: grid; align-content: start; gap: 20px; }
+        h1 { margin: 0; font-size: 22px; font-weight: 600; }
+
+        .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .card { padding: 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+        .card small { color: var(--muted); }
+        .card b { display: block; margin-top: 6px; font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+        .table { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+        .row { display: grid; grid-template-columns: 2fr 1fr 1fr 90px; gap: 16px; padding: 14px 18px; border-top: 1px solid var(--line); }
+        .row:first-child { border-top: 0; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+        /* Screenshot only: show a toast countdown frozen part way instead of finished. */
+        .hd-toast__progress { animation: none !important; transform: scaleX(0.62); }
+    </style>
+</head>
+<body>
+    <nav>
+        <strong>Northwind Ops</strong>
+        <span class="on">Dashboard</span>
+        <span>Orders</span>
+        <span>Customers</span>
+        <span>Invoices</span>
+        <span>Settings</span>
+    </nav>
+    <main>
+        <h1>Dashboard</h1>
+        <div class="cards">
+            <div class="card"><small>Open orders</small><b>128</b></div>
+            <div class="card"><small>Shipped today</small><b>46</b></div>
+            <div class="card"><small>Overdue invoices</small><b>7</b></div>
+        </div>
+        <div class="table">
+            <div class="row"><span>Order</span><span>Customer</span><span>Total</span><span>Status</span></div>
+            <div class="row"><span>#10482 Office chairs</span><span>Halvorsen AS</span><span>&euro;2,480.00</span><span>Packed</span></div>
+            <div class="row"><span>#10481 Standing desks</span><span>Brightline Ltd</span><span>&euro;5,960.00</span><span>Shipped</span></div>
+            <div class="row"><span>#10480 Monitor arms</span><span>Okafor &amp; Sons</span><span>&euro;612.50</span><span>Waiting</span></div>
+            <div class="row"><span>#10479 Cable trays</span><span>Lindqvist Group</span><span>&euro;188.00</span><span>Shipped</span></div>
+            <div class="row"><span>#10478 Whiteboards</span><span>Meridian Labs</span><span>&euro;940.00</span><span>Packed</span></div>
+        </div>
+    </main>
+    <script type="module" src="./showcase.js"></script>
+</body>
+</html>
