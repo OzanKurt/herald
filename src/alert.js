@@ -4,7 +4,7 @@
  * centred card.
  */
 
-import { el, fill, fillTitle, onReset, registerRoot, unregisterRoot } from './shared.js';
+import { el, fill, fillTitle, icon, look, onReset, registerRoot, unregisterRoot } from './shared.js';
 
 let count = 0;
 
@@ -27,6 +27,9 @@ const FOCUSABLE = 'a[href], button, input, select, textarea, [contenteditable="t
  * @param {object} options
  * @param {string} options.title
  * @param {string} [options.titleHtml]    Trusted HTML instead of title
+ * @param {'success'|'error'|'warning'|'info'} [options.type]  Colour and icon
+ * @param {string} [options.color]        Any CSS colour; wins over type
+ * @param {string} [options.icon]         Built-in icon name or icon font classes; wins over type
  * @param {string} [options.content]      Plain text
  * @param {string} [options.html]         Trusted HTML instead of content
  * @param {string|string[]} [options.buttons='[OK]']  The last one is the main action
@@ -49,7 +52,22 @@ export const alert = (options = {}, callback) => new Promise((resolve) => {
     box.setAttribute('aria-modal', 'true');
     box.setAttribute('aria-labelledby', `${id}-title`);
 
+    let typeIcon = null;
+    // Typed alerts carry an accent colour and an icon; untyped ones look as before.
+    if (options.type || options.color || options.icon) {
+        const { color, icon: iconName } = look(options);
+        box.style.setProperty('--hd-accent', color);
+        if (options.type) {
+            box.dataset.type = options.type;
+        }
+        box.classList.add('hd-alert--typed');
+        typeIcon = icon(iconName, 'hd-alert__icon');
+    }
+
     const inner = el('div', 'hd-alert__inner');
+    if (typeIcon) {
+        inner.append(typeIcon);
+    }
     const title = fillTitle(el('div', 'hd-alert__title'), options);
     title.id = `${id}-title`;
     inner.append(title);

@@ -24,6 +24,10 @@ const scenes = {
         Herald.alert({ title: 'Delete order #10480?', content: 'The order and its three shipments are removed. This cannot be undone.', buttons: '[Cancel][Delete order]' });
     },
 
+    typed() {
+        Herald.alert({ type: 'error', title: 'Payment failed', content: 'The card was declined by the bank. Try another card or contact the customer.', buttons: '[Close][Retry payment]' });
+    },
+
     prompt() {
         Herald.alert({ title: 'Rename the dashboard', content: 'Shown in the sidebar and in shared links.', buttons: '[Cancel][Save]', input: 'text', inputValue: 'Operations overview' });
     },

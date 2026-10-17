@@ -91,3 +91,31 @@ describe('alert', () => {
         expect(alertBox().querySelector('.hd-alert__content b')).toBeNull();
     });
 });
+
+describe('typed alerts', () => {
+    beforeEach(reset);
+    afterEach(() => vi.useRealTimers());
+
+    it('colours and marks the alert by type, with the type icon', () => {
+        Herald.alert({ title: 'Failed', type: 'error' });
+
+        expect(alertBox().style.getPropertyValue('--hd-accent')).toBe('#c46a69');
+        expect(alertBox().dataset.type).toBe('error');
+        expect(alertBox().querySelector('.hd-alert__icon svg')).not.toBeNull();
+    });
+
+    it('lets color and icon win over the type', () => {
+        Herald.alert({ title: 'A', type: 'error', color: '#123456', icon: 'fa fa-bolt' });
+
+        expect(alertBox().style.getPropertyValue('--hd-accent')).toBe('#123456');
+        expect(alertBox().querySelector('.hd-alert__icon i').className).toBe('fa fa-bolt');
+    });
+
+    it('renders no icon and no accent without a type', () => {
+        Herald.alert({ title: 'A' });
+
+        expect(alertBox().querySelector('.hd-alert__icon')).toBeNull();
+        expect(alertBox().style.getPropertyValue('--hd-accent')).toBe('');
+        expect(alertBox().dataset.type).toBeUndefined();
+    });
+});

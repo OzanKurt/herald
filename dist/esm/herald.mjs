@@ -342,7 +342,20 @@ var alert = (options = {}, callback) => new Promise((resolve) => {
   box.setAttribute("role", "alertdialog");
   box.setAttribute("aria-modal", "true");
   box.setAttribute("aria-labelledby", `${id}-title`);
+  let typeIcon = null;
+  if (options.type || options.color || options.icon) {
+    const { color, icon: iconName } = look(options);
+    box.style.setProperty("--hd-accent", color);
+    if (options.type) {
+      box.dataset.type = options.type;
+    }
+    box.classList.add("hd-alert--typed");
+    typeIcon = icon(iconName, "hd-alert__icon");
+  }
   const inner = el("div", "hd-alert__inner");
+  if (typeIcon) {
+    inner.append(typeIcon);
+  }
   const title = fillTitle(el("div", "hd-alert__title"), options);
   title.id = `${id}-title`;
   inner.append(title);

@@ -33,6 +33,8 @@ const SHOTS = [
         });
     }),
     { file: 'polished-light-prompt.png', query: 'theme=polished&scheme=light&scene=prompt', scheme: 'light' },
+    { file: 'default-typed.png', query: 'theme=default&scheme=light&scene=typed', scheme: 'light' },
+    { file: 'polished-light-typed.png', query: 'theme=polished&scheme=light&scene=typed', scheme: 'light' },
 ];
 
 const server = await createServer({ configFile: resolve(root, 'vite.examples.config.js'), logLevel: 'warn' });

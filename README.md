@@ -109,6 +109,7 @@ if (button === 'Save') rename(value);
 | Option | Description |
 |---|---|
 | `title`, `titleHtml`, `content`, `html` | As for toasts |
+| `type`, `color`, `icon` | As for toasts: a typed alert shows the type's icon beside the title and uses its colour. Without any of them the alert has no icon. |
 | `buttons` | An array, or SmartAdmin's `'[No][Yes]'` string. The last button is the main action. Default `['OK']`. |
 | `input` | `text`, `password` or `select` |
 | `inputValue`, `placeholder` | For text inputs |
@@ -116,6 +117,12 @@ if (button === 'Save') rename(value);
 | `dismissible` | `false` makes Escape do nothing (default `true`) |
 
 It returns a promise of `{ button, value }`. `value` is the input's value, or `null` without an input. Escape dismisses the alert with `button: null`. Enter in a text input presses the main button. Focus moves into the alert, Tab stays inside it, and focus returns to where it was when the alert closes. With several alerts open, only the newest one answers the keyboard. An alert taller than the screen scrolls. A second argument, `(button, value) => {}`, is called too, the way SmartAdmin's callback was; the promise settles first, so a callback that throws cannot leave it pending.
+
+Typed alerts, here `type: 'error'`:
+
+| Default | Polished |
+|---|---|
+| ![The SmartAdmin band with a red edge and a red cross beside the title Payment failed.](docs/images/default-typed.png) | ![A white card with a red cross in a pink disc beside the title Payment failed, and Close and Retry payment buttons.](docs/images/polished-light-typed.png) |
 
 | Polished, with an input | Polished, dark |
 |---|---|
