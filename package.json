@@ -1,6 +1,6 @@
 {
     "name": "@ozankurt/herald",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "Toasts, big notification panels and full-width alerts in the classic SmartAdmin style, with a modern polished theme. No dependencies; optional jQuery drop-in for $.smallBox, $.bigBox and $.SmartMessageBox.",
     "keywords": [
         "notifications",
