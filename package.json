@@ -27,10 +27,12 @@
     "type": "module",
     "main": "dist/herald.cjs",
     "module": "dist/esm/herald.mjs",
+    "types": "dist/herald.d.ts",
     "unpkg": "dist/herald.min.js",
     "jsdelivr": "dist/herald.min.js",
     "exports": {
         ".": {
+            "types": "./dist/herald.d.ts",
             "import": "./dist/esm/herald.mjs",
             "require": "./dist/herald.cjs",
             "default": "./dist/esm/herald.mjs"
@@ -58,7 +60,8 @@
         "test": "vitest run",
         "examples": "vite --config vite.examples.config.js",
         "screenshots": "node scripts/screenshots.js",
-        "prepublishOnly": "npm test && npm run build"
+        "prepublishOnly": "npm test && npm run typecheck && npm run build",
+        "typecheck": "tsc -p tsconfig.types.json"
     },
     "publishConfig": {
         "access": "public"
@@ -67,6 +70,7 @@
         "@playwright/test": "1.63.0",
         "esbuild": "^0.28.2",
         "happy-dom": "^21.0.3",
+        "typescript": "^5.9.3",
         "vite": "^8.3.4",
         "vitest": "^5.0.5"
     }

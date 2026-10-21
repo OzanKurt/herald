@@ -150,7 +150,11 @@ Changing either restyles notifications that are already on screen. Every element
 
 Both themes respect `prefers-reduced-motion`: the polished theme drops movement and blur and keeps short fades; the default theme turns its animations off.
 
-The polished theme uses `oklch()` and `color-mix()`, so it needs Chrome or Edge 111, Safari 16.2 or Firefox 113 and later. The default theme has no such requirement.
+The polished theme is written with `oklch()` and `color-mix()`. Browsers without them (Chrome or Edge before 111, Safari before 16.2, Firefox before 113) get close hex colours and flat icon backgrounds instead, so it stays readable everywhere.
+
+## TypeScript
+
+Type declarations ship with the package (`dist/herald.d.ts`), so `import Herald from '@ozankurt/herald'` is typed in TypeScript and editors: options, icon names, themes and the `alert()` result.
 
 ## Moving from SmartAdmin
 

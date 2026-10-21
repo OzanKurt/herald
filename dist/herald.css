@@ -959,3 +959,67 @@
         animation-duration: 0.01ms;
     }
 }
+
+/* ---------------------------------------------------------------------
+ * Fallbacks for browsers without oklch() or color-mix()
+ * (Chrome/Edge < 111, Safari < 16.2, Firefox < 113). The hex values are
+ * close sRGB matches of the oklch tokens above.
+ * ------------------------------------------------------------------- */
+
+@supports not (color: oklch(0 0 0)) {
+    .hd-root[data-herald-theme="polished"] {
+        --hd-surface: #ffffff;
+        --hd-surface-sunk: #f5f6f8;
+        --hd-text: #1c1f24;
+        --hd-text-muted: #5f646b;
+        --hd-focus: #3d7fe6;
+        --hd-primary: #2f6ac8;
+        --hd-primary-text: #fcfcfc;
+        --hd-danger: #c9414b;
+    }
+
+    .hd-root[data-herald-theme="polished"][data-herald-scheme="dark"] {
+        --hd-surface: #24272c;
+        --hd-surface-sunk: #1b1d21;
+        --hd-text: #eef0f2;
+        --hd-text-muted: #a2a7ae;
+        --hd-focus: #6aa3f5;
+        --hd-primary: #5c92e6;
+        --hd-primary-text: #121417;
+        --hd-danger: #e46b6f;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .hd-root[data-herald-theme="polished"][data-herald-scheme="auto"] {
+            --hd-surface: #24272c;
+            --hd-surface-sunk: #1b1d21;
+            --hd-text: #eef0f2;
+            --hd-text-muted: #a2a7ae;
+            --hd-focus: #6aa3f5;
+            --hd-primary: #5c92e6;
+            --hd-primary-text: #121417;
+            --hd-danger: #e46b6f;
+        }
+    }
+}
+
+@supports not (background: color-mix(in oklab, red, red)) {
+    [data-herald-theme="polished"] .hd-toast,
+    [data-herald-theme="polished"] .hd-panel,
+    [data-herald-theme="polished"] .hd-tile,
+    [data-herald-theme="polished"] .hd-alert--typed {
+        --hd-ink: var(--hd-accent);
+    }
+
+    [data-herald-theme="polished"] .hd-toast__icon,
+    [data-herald-theme="polished"] .hd-panel__icon,
+    [data-herald-theme="polished"] .hd-panel__number,
+    [data-herald-theme="polished"] .hd-alert__icon {
+        background: var(--hd-surface-sunk);
+        box-shadow: inset 0 0 0 1px var(--hd-accent);
+    }
+
+    [data-herald-theme="polished"] .hd-alert__field:focus-visible {
+        box-shadow: inset 0 0 0 1px var(--hd-focus), 0 0 0 3px var(--hd-surface-sunk);
+    }
+}

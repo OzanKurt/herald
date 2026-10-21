@@ -20,6 +20,7 @@ const outputs = [
 
 await Promise.all(outputs.map((options) => build({ bundle: true, ...options })));
 copyFileSync('css/herald.css', 'dist/herald.css');
+copyFileSync('types/herald.d.ts', 'dist/herald.d.ts');
 
 for (const file of [...outputs.map((o) => o.outfile), 'dist/herald.css']) {
     console.log(`${file.padEnd(28)} ${(statSync(file).size / 1024).toFixed(1)} KB`);
